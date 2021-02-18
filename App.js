@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
+  AppState,
   StyleSheet,
   Text,
   View,
@@ -17,12 +18,34 @@ import {
 import { CreditCardInput } from 'react-native-credit-card-input';
 import { Snackbar, Icon } from 'react-native-magnus';
 
+import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
 import Clipboard from 'expo-clipboard';
 
 const sleep = (second) => new Promise((resolve) => setTimeout(resolve, second * 1000));
 const snackbarRef = React.createRef();
+
+const saveOne = async ({ key, val }) => {
+  await SecureStore.setItemAsync(key, JSON.stringify(val)); // save value must be string
+};
+
+const saveMany = async (KV) => {
+  await Promise.all(KV.map(({ key, val }) => saveOne({ key, val })));
+};
+
+const getOne = async ({ key, options }) => {
+  const result = await SecureStore.getItemAsync(key, options);
+  return JSON.parse(result);
+};
+
+const STORE_CREDIT_CARD_KEY_DELIMITER = '_';
+const STORE_CREDIT_CARD_KEY_PREFIX = 'card';
+const STORE_CREDIT_CARD_SAVED_LIST_KEY = 'savedCardList';
+
+const genStoreCardItemKey = (index) => {
+  return `${STORE_CREDIT_CARD_KEY_PREFIX}${STORE_CREDIT_CARD_KEY_DELIMITER}${index}`;
+};
 
 const cardData = {
   name: 'test',
@@ -41,10 +64,19 @@ const invisibleCardData = {
   cvc: '***',
 };
 
-const defaultCards = [...Array(10)].map((el, i) => ({ ...cardData, id: i }));
+// use only for debug card view
+const defaultCards = [...Array(0)].map((el, i) => ({ ...cardData, id: i }));
 
-const Card = ({ id, name, number, MM, YY, cvc, type }) => {
+// card item component
+const Card = ({ id, name: propName, type: propType }) => {
   const [visibleCardInfo, setVisibleCardInfo] = useState(false);
+
+  const [name, setName] = useState(propName);
+  const [number, setNumber] = useState(invisibleCardData.number);
+  const [MM, setMM] = useState(invisibleCardData.MM);
+  const [YY, setYY] = useState(invisibleCardData.YY);
+  const [cvc, setCvc] = useState(invisibleCardData.cvc);
+  const [type, setType] = useState(propType);
 
   return (
     <Pressable
@@ -52,15 +84,26 @@ const Card = ({ id, name, number, MM, YY, cvc, type }) => {
       pressRetentionOffset
       onLongPress={async () => {
         await Haptics.impactAsync();
-        setOnPress(true);
       }}
-      onPressOut={async () => {
-        setOnPress(false);
-      }}
+      onPressOut={async () => {}}
     >
       <TouchableOpacity
-        onPressOut={() => {
+        onPressOut={async () => {
           setVisibleCardInfo(!visibleCardInfo);
+          if (visibleCardInfo) {
+            // hide secure values
+            setNumber(invisibleCardData.number);
+            setMM(invisibleCardData.MM);
+            setYY(invisibleCardData.YY);
+            setCvc(invisibleCardData.cvc);
+          } else {
+            // show secure values from SecureStore
+            const cardInfo = await getOne({ key: genStoreCardItemKey(id) });
+            setNumber(cardInfo.number);
+            setMM(cardInfo.MM);
+            setYY(cardInfo.YY);
+            setCvc(cardInfo.cvc);
+          }
         }}
       >
         <Text style={{ color: '#000', fontSize: 20 }}>{visibleCardInfo ? '🙈' : '🙉'}</Text>
@@ -90,15 +133,11 @@ const Card = ({ id, name, number, MM, YY, cvc, type }) => {
             letterSpacing: 1.5,
           }}
         >
-          {visibleCardInfo ? number : invisibleCardData.number}
+          {number}
         </Text>
       </TouchableOpacity>
-      <Text style={{ ...styles.cardInfoTextMargin, fontSize: 18 }}>
-        {visibleCardInfo ? `${MM}/${YY}` : `${invisibleCardData.MM}/${invisibleCardData.YY}`}
-      </Text>
-      <Text style={{ ...styles.cardInfoTextMargin, fontSize: 18 }}>
-        {visibleCardInfo ? cvc : invisibleCardData.cvc}
-      </Text>
+      <Text style={{ ...styles.cardInfoTextMargin, fontSize: 18 }}>{`${MM}/${YY}`}</Text>
+      <Text style={{ ...styles.cardInfoTextMargin, fontSize: 18 }}>{cvc}</Text>
     </Pressable>
   );
 };
@@ -109,17 +148,25 @@ const App = () => {
   const [cards, setCard] = useState(defaultCards);
   const [inputCardInfo, setInputCardInfo] = useState({});
 
-  const renderItem = ({ item }) => (
-    <Card
-      id={item.id}
-      name={item.name}
-      number={item.number}
-      MM={item.MM}
-      YY={item.YY}
-      cvc={item.cvc}
-      type={item.type}
-    />
-  );
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+
+  useEffect(() => {
+    AppState.addEventListener('change', _handleAppStateChange);
+    return () => {
+      AppState.removeEventListener('change', _handleAppStateChange);
+    };
+  }, [appStateVisible]);
+
+  const _handleAppStateChange = (nextAppState) => {
+    if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+      console.log('App has come to the foreground!');
+    }
+    appState.current = nextAppState;
+    setAppStateVisible(appState.current);
+  };
+
+  const renderItem = ({ item }) => <Card id={item.id} name={item.name} type={item.type} />;
 
   return (
     <SafeAreaView style={styles.wrapper}>
@@ -134,8 +181,6 @@ const App = () => {
               <TouchableWithoutFeedback>
                 <View style={styles.modalView}>
                   <CreditCardInput
-                    // cardImageFront={0}
-                    // cardImageBack={0}
                     requiresName={true}
                     requiresCVC={true}
                     placeholders={{
@@ -178,9 +223,39 @@ const App = () => {
                       padding: 10,
                     }}
                     disabled={!cardInfoValid}
-                    onPress={() => {
-                      setCard([...cards, inputCardInfo]);
+                    onPress={async () => {
                       setModalVisible(!modalVisible);
+
+                      await Promise.all([
+                        // update already cards info
+                        saveOne({
+                          key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
+                          val: {
+                            length: [...cards, inputCardInfo].length,
+                            keys: [...cards, inputCardInfo].map((card) =>
+                              genStoreCardItemKey(card.id)
+                            ),
+                          },
+                        }),
+                        // insert new card info
+                        saveOne({
+                          key: genStoreCardItemKey(inputCardInfo.id),
+                          val: inputCardInfo,
+                        }),
+                      ]);
+                      const { keys: savedCardKeys } = await getOne({
+                        key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
+                      });
+                      const savedCards = (
+                        await Promise.all(
+                          savedCardKeys.map((key) => {
+                            return getOne({ key });
+                          })
+                        )
+                      ).flat();
+
+                      // update renderItem
+                      setCard(savedCards);
                     }}
                   >
                     <Text style={{ ...styles.textStyle }}>register</Text>
@@ -190,6 +265,20 @@ const App = () => {
             </TouchableOpacity>
           </Modal>
           <Text style={styles.titleText}>💳</Text>
+          <TouchableOpacity>
+            <Text
+              style={{ ...styles.titleText }}
+              onPress={async () => {
+                const hasHardwareAsync = await LocalAuthentication.hasHardwareAsync();
+                const supportedAuthenticationTypesAsync = await LocalAuthentication.supportedAuthenticationTypesAsync();
+                const isEnrolledAsync = await LocalAuthentication.isEnrolledAsync();
+                await LocalAuthentication.authenticateAsync();
+              }}
+            >
+              🙂
+            </Text>
+          </TouchableOpacity>
+          <Text style={{ color: '#fff' }}>{appStateVisible}</Text>
           <TouchableOpacity>
             <Text
               style={{ ...styles.titleText }}
@@ -207,7 +296,7 @@ const App = () => {
           data={cards}
           inverted={true}
           renderItem={renderItem}
-          keyExtractor={({ id }) => id}
+          keyExtractor={({ id }) => id.toString()}
         ></FlatList>
       </ScrollView>
       <Snackbar

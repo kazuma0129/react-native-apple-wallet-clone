@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ExpoAwesomeProject",
-    "slug": "ExpoAwesomeProject",
+    "name": "WalletApp",
+    "slug": "WalletApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,11 +13,10 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "kazuma0129.work.WalletApp"
     },
     "android": {
       "adaptiveIcon": {
