@@ -2,13 +2,13 @@
   "expo": {
     "name": "WalletApp",
     "slug": "WalletApp",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/ios/Icon-dark-pastel.png",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/ios/iPhone12-12Pro-2.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
@@ -23,12 +23,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/ios/icon-dark-pastel.png",
+        "backgroundColor": "#000000"
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/ios/icon-dark-pastel.png"
     }
   }
 }

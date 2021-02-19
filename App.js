@@ -30,13 +30,53 @@ const saveOne = async ({ key, val }) => {
   await SecureStore.setItemAsync(key, JSON.stringify(val)); // save value must be string
 };
 
-const saveMany = async (KV) => {
-  await Promise.all(KV.map(({ key, val }) => saveOne({ key, val })));
+const saveMany = async (arr) => {
+  await Promise.all(arr.map(saveOne));
 };
 
 const getOne = async ({ key, options }) => {
   const result = await SecureStore.getItemAsync(key, options);
   return JSON.parse(result);
+};
+
+const getAllCardKeys = async () => {
+  const result = await getOne({
+    key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
+  });
+  if (result === null) {
+    return [];
+  }
+  return result.keys;
+};
+
+const getAllSavedCards = async () => {
+  const savedCardKeys = await getAllCardKeys();
+  const allSavedCards = (
+    await Promise.all(
+      savedCardKeys.map((key) => {
+        return getOne({ key });
+      })
+    )
+  ).flat();
+  return allSavedCards;
+};
+
+const deleteOne = async ({ key, options }) => {
+  await SecureStore.deleteItemAsync(key, options);
+};
+
+const deleteMany = async (arr) => {
+  await Promise.all(arr.map(deleteOne));
+};
+
+const flashAllSavedCards = async () => {
+  const cardKeys = await getAllCardKeys();
+  await Promise.all(
+    cardKeys.map((key) => {
+      deleteOne({ key });
+    })
+  );
+  await deleteOne({ key: STORE_CREDIT_CARD_SAVED_LIST_KEY });
 };
 
 const STORE_CREDIT_CARD_KEY_DELIMITER = '_';
@@ -65,7 +105,7 @@ const invisibleCardData = {
 };
 
 // use only for debug card view
-const defaultCards = [...Array(0)].map((el, i) => ({ ...cardData, id: i }));
+const defaultCards = [...Array(10)].map((el, i) => ({ ...cardData, id: i }));
 
 // card item component
 const Card = ({ id, name: propName, type: propType }) => {
@@ -145,8 +185,11 @@ const Card = ({ id, name: propName, type: propType }) => {
 const App = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [cardInfoValid, setCardInfoValid] = useState(false);
-  const [cards, setCard] = useState(defaultCards);
+  const [cards, setCard] = useState([]);
   const [inputCardInfo, setInputCardInfo] = useState({});
+  const [shouldReAuth, setShouldReAuth] = useState(false);
+
+  const [startUp, setStartUp] = useState(true);
 
   const appState = useRef(AppState.currentState);
   const [appStateVisible, setAppStateVisible] = useState(appState.current);
@@ -158,13 +201,55 @@ const App = () => {
     };
   }, [appStateVisible]);
 
+  // reAuth when back to foreground from background
+  useEffect(() => {
+    let didAuth = false;
+    (async () => {
+      if (shouldReAuth) {
+        if (!didAuth) {
+          await LocalAuthentication.authenticateAsync();
+          setShouldReAuth(false);
+        }
+      }
+    })();
+    return () => {
+      didAuth = true;
+    };
+  }, [shouldReAuth]);
+
   const _handleAppStateChange = (nextAppState) => {
+    if (appState.current.match(/inactive|background/)) {
+    }
     if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-      console.log('App has come to the foreground!');
+      // console.log('App has come to the foreground!');
+    }
+    if (appState.current === 'background' && nextAppState === 'active') {
+      // console.log('App has come to the foreground from background!');
+      setShouldReAuth(true);
+    }
+    if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
+      // console.log('App goto background!');
     }
     appState.current = nextAppState;
     setAppStateVisible(appState.current);
   };
+
+  // only one call when application startUp
+  useEffect(() => {
+    // let didLoad = false;
+    (async () => {
+      if (startUp) {
+        // if (startUp && !didLoad) {
+        setStartUp(false);
+        const savedCards = await getAllSavedCards();
+        setCard(savedCards);
+        console.log(cards);
+      }
+    })();
+    return () => {
+      // didLoad = true;
+    };
+  }, [startUp]);
 
   const renderItem = ({ item }) => <Card id={item.id} name={item.name} type={item.type} />;
 
@@ -197,9 +282,9 @@ const App = () => {
                     }}
                     style={{ height: 100 }}
                     onChange={(form) => {
-                      if (form.valid) {
-                        Keyboard.dismiss();
-                        setCardInfoValid(form.valid);
+                      if (form.valid && form.status.name === 'valid') {
+                        // Keyboard.dismiss();
+                        setCardInfoValid(true);
                         const [MM, YY] = form.values.expiry.split('/');
                         const { name, number, cvc, type } = form.values;
                         const card = {
@@ -265,20 +350,14 @@ const App = () => {
             </TouchableOpacity>
           </Modal>
           <Text style={styles.titleText}>💳</Text>
-          <TouchableOpacity>
-            <Text
-              style={{ ...styles.titleText }}
-              onPress={async () => {
-                const hasHardwareAsync = await LocalAuthentication.hasHardwareAsync();
-                const supportedAuthenticationTypesAsync = await LocalAuthentication.supportedAuthenticationTypesAsync();
-                const isEnrolledAsync = await LocalAuthentication.isEnrolledAsync();
-                await LocalAuthentication.authenticateAsync();
-              }}
-            >
-              🙂
-            </Text>
-          </TouchableOpacity>
-          <Text style={{ color: '#fff' }}>{appStateVisible}</Text>
+          {/* <Text
+            style={styles.titleText}
+            onPress={async () => {
+              await flashAllSavedCards();
+            }}
+          >
+            🆑
+          </Text> */}
           <TouchableOpacity>
             <Text
               style={{ ...styles.titleText }}
@@ -296,7 +375,12 @@ const App = () => {
           data={cards}
           inverted={true}
           renderItem={renderItem}
-          keyExtractor={({ id }) => id.toString()}
+          keyExtractor={(item) => {
+            if (item === null) {
+              return;
+            }
+            return item.id.toString();
+          }}
         ></FlatList>
       </ScrollView>
       <Snackbar
