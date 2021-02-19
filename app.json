@@ -16,7 +16,10 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "kazuma0129.work.WalletApp"
+      "bundleIdentifier": "kazuma0129.work.WalletApp",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "This app will optionally use Face ID or Touch ID to save login"
+      }
     },
     "android": {
       "adaptiveIcon": {
