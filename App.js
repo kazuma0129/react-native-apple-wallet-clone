@@ -240,10 +240,10 @@ const App = () => {
     (async () => {
       if (startUp) {
         // if (startUp && !didLoad) {
+        await LocalAuthentication.authenticateAsync();
         setStartUp(false);
         const savedCards = await getAllSavedCards();
         setCard(savedCards);
-        console.log(cards);
       }
     })();
     return () => {
