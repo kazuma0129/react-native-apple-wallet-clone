@@ -9,6 +9,7 @@ import {
   TouchableHighlight,
   TouchableWithoutFeedback,
   Keyboard,
+  Image,
   Modal,
   TouchableOpacity,
   FlatList,
@@ -182,6 +183,38 @@ const Card = ({ id, name: propName, type: propType }) => {
   );
 };
 
+const splashScreenComponent = () => {
+  console.log('splashScreenComponent');
+  return (
+    <View
+      style={{
+        alignSelf: 'center',
+        justifyContent: 'center',
+        height: 700,
+      }}
+    >
+      <Image style={{ ...styles.tinyLogo }} source={require('./assets/ios/Icon-dark-pastel.png')} />
+    </View>
+  );
+};
+
+const snackBarComponent = () => {
+  return (
+    <Snackbar
+      suffix={<Icon name='checkcircle' color='white' fontSize='md' fontFamily='AntDesign' />}
+      m={40}
+      p={20}
+      onDismiss={() => {}}
+      ref={snackbarRef}
+      bg='gray400'
+      color='black'
+      duration={2000}
+    >
+      Copied to your Clipboard!
+    </Snackbar>
+  );
+};
+
 const App = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [cardInfoValid, setCardInfoValid] = useState(false);
@@ -189,10 +222,14 @@ const App = () => {
   const [inputCardInfo, setInputCardInfo] = useState({});
   const [shouldReAuth, setShouldReAuth] = useState(false);
 
-  const [startUp, setStartUp] = useState(true);
-
   const appState = useRef(AppState.currentState);
-  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+  const [appStateVisible, setAppStateVisible] = useState(true);
+
+  const [shouldSplash, setShouldSplash] = useState(false);
+
+  const [comp, setComp] = useState();
+
+  const [authResult, setAuthResult] = useState({});
 
   useEffect(() => {
     AppState.addEventListener('change', _handleAppStateChange);
@@ -207,7 +244,8 @@ const App = () => {
     (async () => {
       if (shouldReAuth) {
         if (!didAuth) {
-          await LocalAuthentication.authenticateAsync();
+          const result = await LocalAuthentication.authenticateAsync();
+          setAuthResult(result);
           setShouldReAuth(false);
         }
       }
@@ -217,44 +255,108 @@ const App = () => {
     };
   }, [shouldReAuth]);
 
-  const _handleAppStateChange = (nextAppState) => {
-    if (appState.current.match(/inactive|background/)) {
+  useEffect(() => {
+    if (shouldReAuth) {
+      setComp(mainViewComponent());
     }
-    if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-      // console.log('App has come to the foreground!');
-    }
-    if (appState.current === 'background' && nextAppState === 'active') {
-      // console.log('App has come to the foreground from background!');
+  }, [authResult]);
+
+  const insideCheckState = (currentState, nextState) => {
+    if (currentState === 'background') {
+      setComp(splashScreenComponent());
+      setShouldSplash(true);
       setShouldReAuth(true);
+      return;
     }
-    if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-      // console.log('App goto background!');
+    if (nextState === 'background') {
+      setComp(splashScreenComponent());
+      // setShouldSplash(true);
+      return;
     }
-    appState.current = nextAppState;
-    setAppStateVisible(appState.current);
+    if (currentState === 'active') {
+      // setComp(mainViewComponent());
+      return;
+    }
+    if (nextState === 'inactive' || currentState === 'inactive') {
+      // setComp(splashScreenComponent());
+      return;
+    }
+
+    // if (currentState === 'active' && authResult.success) {
+    // setComp(
+    //   (() => {
+    //     return <Text style={{ color: '#ffffff' }}>kokokok</Text>;
+    //   })()
+    // );
+    //   return;
+    // }
+    return;
+    // if (
+    //   currentState === 'background' ||
+    //   nextState === 'background' ||
+    //   (currentState === 'inactive' && nextState === 'background') ||
+    //   (currentState === 'active' && nextState === 'background')
+    // ) {
+    //   setComp(splashScreenComponent());
+    //   setShouldSplash(true);
+    //   return;
+    // }
+    // if (currentState === 'active' && !authResult.success) {
+    //   setComp(splashScreenComponent());
+    //   return;
+    // }
+    // if (currentState.match(/inactive|background/) && nextState === 'active') {
+    //   // console.log('App has come to the foreground!');
+    //   // setComp();
+    // }
+    // if (currentState === 'background' && nextState === 'active') {
+    //   // console.log('App has come to the foreground from background!');
+    //   setShouldReAuth(true);
+    //   // setComp(mainViewComponent());
+    //   return;
+    // }
+    // if (currentState === 'active' && nextState.match(/inactive|background/)) {
+    //   // console.log('App goto background!');
+    //   // setComp();
+    //   // setShouldSplash(false);
+    // }
+    // if (currentState === 'active') {
+    //   setComp(
+    //     (() => {
+    //       return <Text style={{ color: '#ffffff' }}>kokokok</Text>;
+    //     })()
+    //   );
+    //   return;
+    // }
+    // return;
+  };
+
+  const _handleAppStateChange = (nextState) => {
+    const currentState = appState.current;
+    // if(appState.current === "background" || nextState === "background"){
+    //   set
+    // }
+    insideCheckState(currentState, nextState);
+
+    appState.current = nextState;
+
+    setAppStateVisible(nextState);
   };
 
   // only one call when application startUp
   useEffect(() => {
-    // let didLoad = false;
     (async () => {
-      if (startUp) {
-        // if (startUp && !didLoad) {
-        await LocalAuthentication.authenticateAsync();
-        setStartUp(false);
-        const savedCards = await getAllSavedCards();
-        setCard(savedCards);
-      }
+      await LocalAuthentication.authenticateAsync();
+      const savedCards = await getAllSavedCards();
+      setCard(savedCards);
     })();
-    return () => {
-      // didLoad = true;
-    };
-  }, [startUp]);
+    return () => {};
+  }, []);
 
   const renderItem = ({ item }) => <Card id={item.id} name={item.name} type={item.type} />;
 
-  return (
-    <SafeAreaView style={styles.wrapper}>
+  const mainViewComponent = () => {
+    return (
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.viewWrapper}>
           <Modal animationType='slide' transparent={true} visible={modalVisible}>
@@ -351,13 +453,13 @@ const App = () => {
           </Modal>
           <Text style={styles.titleText}>💳</Text>
           {/* <Text
-            style={styles.titleText}
-            onPress={async () => {
-              await flashAllSavedCards();
-            }}
-          >
-            🆑
-          </Text> */}
+      style={styles.titleText}
+      onPress={async () => {
+        await flashAllSavedCards();
+      }}
+    >
+      🆑
+    </Text> */}
           <TouchableOpacity>
             <Text
               style={{ ...styles.titleText }}
@@ -383,18 +485,17 @@ const App = () => {
           }}
         ></FlatList>
       </ScrollView>
-      <Snackbar
-        suffix={<Icon name='checkcircle' color='white' fontSize='md' fontFamily='AntDesign' />}
-        m={40}
-        p={20}
-        onDismiss={() => {}}
-        ref={snackbarRef}
-        bg='gray400'
-        color='black'
-        duration={2000}
-      >
-        Copied to your Clipboard!
-      </Snackbar>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.wrapper}>
+      {comp}
+      {/* {mainViewComponent()} */}
+      {/* <Text style={{ color: '#fff', fontSize: 100 }}>kokokokokokokok</Text> */}
+      {/* {shouldSplash ? splashScreenComponent() : mainViewComponent()} */}
+      {/* {mainViewComponent()} */}
+      {snackBarComponent()}
     </SafeAreaView>
   );
 };
@@ -419,7 +520,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    height: 220,
+    height: 240,
     borderColor: '#fff',
     borderWidth: 1,
     borderRadius: 13,
@@ -464,6 +565,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  tinyLogo: {
+    width: 100,
+    height: 100,
+    alignItems: 'center',
   },
 });
 
