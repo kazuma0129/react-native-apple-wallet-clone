@@ -9,19 +9,22 @@ import {
   TouchableHighlight,
   TouchableWithoutFeedback,
   Keyboard,
+  Image,
   Modal,
   TouchableOpacity,
   FlatList,
   Pressable,
 } from 'react-native';
 
-import { CreditCardInput } from 'react-native-credit-card-input';
+import { CreditCardInput, LiteCreditCardInput } from 'react-native-credit-card-input';
 import { Snackbar, Icon } from 'react-native-magnus';
 
 import * as LocalAuthentication from 'expo-local-authentication';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
 import Clipboard from 'expo-clipboard';
+import { BlurView } from 'expo-blur';
 
 const sleep = (second) => new Promise((resolve) => setTimeout(resolve, second * 1000));
 const snackbarRef = React.createRef();
@@ -83,6 +86,17 @@ const STORE_CREDIT_CARD_KEY_DELIMITER = '_';
 const STORE_CREDIT_CARD_KEY_PREFIX = 'card';
 const STORE_CREDIT_CARD_SAVED_LIST_KEY = 'savedCardList';
 
+const CARD_IMAGE_BASE_PATH = './assets/cards/';
+
+const CARD_IMAGE_PATH = {
+  VISA: `${CARD_IMAGE_BASE_PATH}visa_PNG30.png`,
+  MASTERCARD: `${CARD_IMAGE_BASE_PATH}mc_symbol_opt_73_3x.png`,
+  AMERICAN_EXPRESS: `${CARD_IMAGE_BASE_PATH}Amex_logo_color.png`,
+  JCB: `${CARD_IMAGE_BASE_PATH}`,
+};
+
+// require(CARD_IMAGE_PATH.MASTERCARD)
+
 const genStoreCardItemKey = (index) => {
   return `${STORE_CREDIT_CARD_KEY_PREFIX}${STORE_CREDIT_CARD_KEY_DELIMITER}${index}`;
 };
@@ -118,66 +132,166 @@ const Card = ({ id, name: propName, type: propType }) => {
   const [cvc, setCvc] = useState(invisibleCardData.cvc);
   const [type, setType] = useState(propType);
 
+  const cardImage = ((type) => {
+    switch (type) {
+      case 'visa':
+        return require('./assets/cards/visa_PNG30.png');
+      case 'master-card':
+        return require('./assets/cards/mc_symbol_opt_73_3x.png');
+      case 'jcb':
+        return require('./assets/cards/JCB_logo_logotype_emblem_Japan_Credit_Bureau.png');
+      case 'american-express':
+        return require('./assets/cards/Amex_logo_color.png');
+      default:
+        return require('./assets/cards/Amex_logo_color.png');
+    }
+  })(type);
+
   return (
     <Pressable
-      style={[styles.container]}
       pressRetentionOffset
       onLongPress={async () => {
         await Haptics.impactAsync();
       }}
       onPressOut={async () => {}}
     >
-      <TouchableOpacity
-        onPressOut={async () => {
-          setVisibleCardInfo(!visibleCardInfo);
-          if (visibleCardInfo) {
-            // hide secure values
-            setNumber(invisibleCardData.number);
-            setMM(invisibleCardData.MM);
-            setYY(invisibleCardData.YY);
-            setCvc(invisibleCardData.cvc);
-          } else {
-            // show secure values from SecureStore
-            const cardInfo = await getOne({ key: genStoreCardItemKey(id) });
-            setNumber(cardInfo.number);
-            setMM(cardInfo.MM);
-            setYY(cardInfo.YY);
-            setCvc(cardInfo.cvc);
-          }
+      <LinearGradient
+        colors={['#44A5FF', '#393FFF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          ...styles.container,
         }}
       >
-        <Text style={{ color: '#000', fontSize: 20 }}>{visibleCardInfo ? '🙈' : '🙉'}</Text>
-      </TouchableOpacity>
-      <Text>{name}</Text>
-      <Text>{type}</Text>
-      <TouchableOpacity
-        onPressOut={async () => {
-          if (!visibleCardInfo) {
-            return;
-          }
-          const removedWhiteSpaceNumber = number.split(' ').join('');
-          Clipboard.setString(removedWhiteSpaceNumber);
-          await Haptics.impactAsync();
-          await sleep(0.2);
-          await Haptics.impactAsync();
-          if (snackbarRef.current) {
-            snackbarRef.current.show();
-          }
-        }}
-      >
-        <Text
+        <View
           style={{
-            ...styles.cardInfoTextMargin,
-            fontSize: 32,
-            fontWeight: '300',
-            letterSpacing: 1.5,
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
           }}
         >
-          {number}
+          <View
+            style={{
+              height: 40,
+              width: 100,
+              marginLeft: 10,
+            }}
+          >
+            <Image
+              source={cardImage}
+              resizeMode='contain'
+              style={{
+                width: '100%',
+                height: '100%',
+              }}
+            />
+          </View>
+          <TouchableOpacity
+            style={{
+              justifyContent: 'center',
+            }}
+            onPressOut={async () => {
+              setVisibleCardInfo(!visibleCardInfo);
+              if (visibleCardInfo) {
+                // hide secure values
+                setNumber(invisibleCardData.number);
+                setMM(invisibleCardData.MM);
+                setYY(invisibleCardData.YY);
+                setCvc(invisibleCardData.cvc);
+              } else {
+                // show secure values from SecureStore
+                const cardInfo = await getOne({ key: genStoreCardItemKey(id) });
+                setNumber(cardInfo.number);
+                setMM(cardInfo.MM);
+                setYY(cardInfo.YY);
+                setCvc(cardInfo.cvc);
+              }
+            }}
+          >
+            <Text style={{ color: '#000', fontSize: 20, paddingBottom: 10, paddingRight: 10 }}>
+              {visibleCardInfo ? '🙈' : '🙉'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={{
+            alignSelf: 'center',
+          }}
+          onPressOut={async () => {
+            if (!visibleCardInfo) {
+              return;
+            }
+            const removedWhiteSpaceNumber = number.split(' ').join('');
+            Clipboard.setString(removedWhiteSpaceNumber);
+            await Haptics.impactAsync();
+            await sleep(0.2);
+            await Haptics.impactAsync();
+            if (snackbarRef.current) {
+              snackbarRef.current.show();
+            }
+          }}
+        >
+          <Text
+            style={{
+              ...styles.cardInfoTextMargin,
+              ...styles.cardTextColorLight,
+              alignSelf: 'center',
+              fontSize: 32,
+              fontWeight: '300',
+              letterSpacing: 1.5,
+            }}
+          >
+            {number}
+          </Text>
+        </TouchableOpacity>
+
+        <View
+          style={{
+            ...styles.cardTextColorLight,
+            paddingHorizontal: 10,
+            alignSelf: 'flex-end',
+            display: 'flex',
+            flexWrap: 'wrap',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text
+            style={{
+              ...styles.cardTextColorLight,
+              paddingHorizontal: 10,
+            }}
+          >
+            {name}
+          </Text>
+          <Text
+            style={{
+              ...styles.cardTextColorLight,
+              paddingHorizontal: 10,
+            }}
+          >{`${MM}/${YY}`}</Text>
+          <Text
+            style={{
+              ...styles.cardTextColorLight,
+            }}
+          >
+            {type}
+          </Text>
+        </View>
+
+        <Text
+          style={{
+            ...styles.cardTextColorLight,
+            padding: 10,
+            fontSize: 18,
+            alignSelf: 'flex-end',
+            display: 'flex',
+          }}
+        >
+          {cvc}
         </Text>
-      </TouchableOpacity>
-      <Text style={{ ...styles.cardInfoTextMargin, fontSize: 18 }}>{`${MM}/${YY}`}</Text>
-      <Text style={{ ...styles.cardInfoTextMargin, fontSize: 18 }}>{cvc}</Text>
+      </LinearGradient>
     </Pressable>
   );
 };
@@ -253,140 +367,145 @@ const App = () => {
 
   const renderItem = ({ item }) => <Card id={item.id} name={item.name} type={item.type} />;
 
-  return (
-    <SafeAreaView style={styles.wrapper}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.viewWrapper}>
-          <Modal animationType='slide' transparent={true} visible={modalVisible}>
-            <TouchableOpacity
-              style={styles.centeredView}
-              activeOpacity={1}
-              onPressOut={() => setModalVisible(false)}
-            >
-              <TouchableWithoutFeedback>
-                <View style={styles.modalView}>
-                  <CreditCardInput
-                    requiresName={true}
-                    requiresCVC={true}
-                    placeholders={{
-                      name: 'my card',
-                      number: '1234 5678 1234 5678',
-                      expiry: 'MM/YY',
-                      cvc: 'CVC',
-                    }}
-                    labels={{
-                      name: 'LABEL',
-                      number: 'CARD NUMBER',
-                      expiry: 'EXPIRY',
-                      cvc: 'CVC/CCV',
-                    }}
-                    style={{ height: 100 }}
-                    onChange={(form) => {
-                      if (form.valid && form.status.name === 'valid') {
-                        // Keyboard.dismiss();
-                        setCardInfoValid(true);
-                        const [MM, YY] = form.values.expiry.split('/');
-                        const { name, number, cvc, type } = form.values;
-                        const card = {
-                          id: cards.length,
-                          name,
-                          number,
-                          MM,
-                          YY,
-                          cvc,
-                          type,
-                        };
-                        setInputCardInfo(card);
-                      }
-                    }}
-                  />
-
-                  <TouchableHighlight
-                    style={{
-                      backgroundColor: cardInfoValid ? '#2196F3' : '#ff8888',
-                      marginTop: 10,
-                      padding: 10,
-                    }}
-                    disabled={!cardInfoValid}
-                    onPress={async () => {
-                      setModalVisible(!modalVisible);
-
-                      await Promise.all([
-                        // update already cards info
-                        saveOne({
-                          key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
-                          val: {
-                            length: [...cards, inputCardInfo].length,
-                            keys: [...cards, inputCardInfo].map((card) =>
-                              genStoreCardItemKey(card.id)
-                            ),
-                          },
-                        }),
-                        // insert new card info
-                        saveOne({
-                          key: genStoreCardItemKey(inputCardInfo.id),
-                          val: inputCardInfo,
-                        }),
-                      ]);
-                      const { keys: savedCardKeys } = await getOne({
-                        key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
-                      });
-                      const savedCards = (
-                        await Promise.all(
-                          savedCardKeys.map((key) => {
-                            return getOne({ key });
-                          })
-                        )
-                      ).flat();
-
-                      // update renderItem
-                      setCard(savedCards);
-                    }}
-                  >
-                    <Text style={{ ...styles.textStyle }}>register</Text>
-                  </TouchableHighlight>
-                </View>
-              </TouchableWithoutFeedback>
-            </TouchableOpacity>
-          </Modal>
-          <Text style={styles.titleText}>💳</Text>
-          {/* <Text
-            style={styles.titleText}
-            onPress={async () => {
-              await flashAllSavedCards();
+  const CardListHeaderComponent = () => {
+    return (
+      <View style={styles.viewWrapper}>
+        <Text style={styles.titleText}>💳</Text>
+        {/* <Text
+          style={styles.titleText}
+          onPress={async () => {
+            await flashAllSavedCards();
+          }}
+        >
+          🆑
+        </Text> */}
+        <TouchableOpacity>
+          <Text
+            style={{ ...styles.titleText }}
+            onPress={() => {
+              setCardInfoValid(false);
+              setModalVisible(true);
             }}
           >
-            🆑
-          </Text> */}
-          <TouchableOpacity>
-            <Text
-              style={{ ...styles.titleText }}
-              onPress={() => {
-                setCardInfoValid(false);
-                setModalVisible(true);
-              }}
-            >
-              +
-            </Text>
-          </TouchableOpacity>
-        </View>
+            +
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
-        <FlatList
-          data={cards}
-          inverted={true}
-          renderItem={renderItem}
-          keyExtractor={(item) => {
-            if (item === null) {
-              return;
-            }
-            return item.id.toString();
-          }}
-        ></FlatList>
-      </ScrollView>
+  return (
+    <SafeAreaView style={styles.wrapper}>
+      <Modal animationType='slide' transparent={true} visible={modalVisible}>
+        <TouchableOpacity
+          style={styles.centeredView}
+          activeOpacity={1}
+          onPressOut={() => setModalVisible(false)}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.modalView}>
+              <CreditCardInput
+                requiresName={true}
+                requiresCVC={true}
+                // cardImageFront={require('./assets/ios/Icon-dark-mono.png')}
+                placeholders={{
+                  name: 'my card',
+                  number: '1234 5678 1234 5678',
+                  expiry: 'MM/YY',
+                  cvc: 'CVC',
+                }}
+                labels={{
+                  name: 'LABEL',
+                  number: 'CARD NUMBER',
+                  expiry: 'EXPIRY',
+                  cvc: 'CVC/CCV',
+                }}
+                style={{ height: 100 }}
+                onChange={(form) => {
+                  if (form.valid && form.status.name === 'valid') {
+                    // Keyboard.dismiss();
+                    setCardInfoValid(true);
+                    const [MM, YY] = form.values.expiry.split('/');
+                    const { name, number, cvc, type } = form.values;
+                    const card = {
+                      id: cards.length,
+                      name,
+                      number,
+                      MM,
+                      YY,
+                      cvc,
+                      type,
+                    };
+                    setInputCardInfo(card);
+                  }
+                }}
+              />
+
+              <TouchableHighlight
+                style={{
+                  backgroundColor: cardInfoValid ? '#2196F3' : '#ff8888',
+                  marginTop: 10,
+                  padding: 10,
+                }}
+                disabled={!cardInfoValid}
+                onPress={async () => {
+                  setModalVisible(!modalVisible);
+
+                  await Promise.all([
+                    // update already cards info
+                    saveOne({
+                      key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
+                      val: {
+                        length: [...cards, inputCardInfo].length,
+                        keys: [...cards, inputCardInfo].map((card) => genStoreCardItemKey(card.id)),
+                      },
+                    }),
+                    // insert new card info
+                    saveOne({
+                      key: genStoreCardItemKey(inputCardInfo.id),
+                      val: inputCardInfo,
+                    }),
+                  ]);
+                  const { keys: savedCardKeys } = await getOne({
+                    key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
+                  });
+                  const savedCards = (
+                    await Promise.all(
+                      savedCardKeys.map((key) => {
+                        return getOne({ key });
+                      })
+                    )
+                  ).flat();
+
+                  // update renderItem
+                  setCard(savedCards);
+                }}
+              >
+                <Text style={{ ...styles.textStyle }}>register</Text>
+              </TouchableHighlight>
+            </View>
+          </TouchableWithoutFeedback>
+        </TouchableOpacity>
+      </Modal>
+
+      <FlatList
+        data={cards}
+        inverted={false}
+        renderItem={renderItem}
+        ListHeaderComponent={CardListHeaderComponent}
+        keyExtractor={(item) => {
+          if (item === null) {
+            return;
+          }
+          return item.id.toString();
+        }}
+      ></FlatList>
+
       <Snackbar
         suffix={<Icon name='checkcircle' color='white' fontSize='md' fontFamily='AntDesign' />}
         m={40}
-        p={20}
+        mb={60}
+        p={25}
         onDismiss={() => {}}
         ref={snackbarRef}
         bg='gray400'
@@ -415,16 +534,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   container: {
+    flexDirection: 'column',
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    height: 220,
-    borderColor: '#fff',
-    borderWidth: 1,
-    borderRadius: 13,
+    // // backgroundColor: '#fff',
+    // // alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    height: 230,
+    // // borderColor: '#fff',
+    // borderWidth: 1,
+    borderRadius: 20,
     padding: 10,
     margin: 10,
+    paddingTop: 15,
+    marginHorizontal: 20,
+  },
+  cardTextColorLight: {
+    color: '#fff',
   },
   containerPressed: {
     flex: 1,
@@ -451,6 +576,8 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   modalView: {
+    // width: '100%',
+    // height: '90%',
     margin: 20,
     width: 300,
     backgroundColor: 'white',
