@@ -4,9 +4,9 @@
     "slug": "WalletApp",
     "version": "1.0.6",
     "orientation": "portrait",
-    "icon": "./assets/ios/Icon-dark-pastel.png",
+    "icon": "./src/assets/ios/Icon-dark-pastel.png",
     "splash": {
-      "image": "./assets/ios/iPhone12-12Pro-2.png",
+      "image": "./src/assets/ios/iPhone12-12Pro-2.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
@@ -23,12 +23,12 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/ios/icon-dark-pastel.png",
+        "foregroundImage": "./src/assets/ios/icon-dark-pastel.png",
         "backgroundColor": "#000000"
       }
     },
     "web": {
-      "favicon": "./assets/ios/icon-dark-pastel.png"
+      "favicon": "./src/assets/ios/icon-dark-pastel.png"
     }
   }
 }
