@@ -5,24 +5,23 @@ import {
   Text,
   View,
   SafeAreaView,
-  TouchableHighlight,
   TouchableWithoutFeedback,
   Modal,
   TouchableOpacity,
-  FlatList,
 } from 'react-native';
 
-import { CreditCardInput } from 'react-native-credit-card-input';
 import { Snackbar, Icon } from 'react-native-magnus';
-
-import * as LocalAuthentication from 'expo-local-authentication';
 import LottieView from 'lottie-react-native';
-import { Card, snackbarRef } from './shared/components/card';
-import { getAllSavedCards, genStoreCardItemKey, AllCardRes } from './shared/repositories/cards';
-import { saveOne, getOne } from './shared/drivers/secure_store';
-import { STORE_CREDIT_CARD_SAVED_LIST_KEY } from './shared/constants/store';
 
 import { registerRootComponent } from 'expo';
+import { BlurView } from 'expo-blur';
+import * as LocalAuthentication from 'expo-local-authentication';
+
+import { snackbarRef } from './shared/components/card';
+import { CardList } from './shared/components/card_list';
+import { CardRegisterButton } from './shared/components/card_register_button';
+import { CardInput } from './shared/components/card_input';
+import { getAllSavedCards } from './shared/repositories/cards';
 
 const App = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -43,7 +42,7 @@ const App = () => {
   const appState = useRef(AppState.currentState);
   const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
-  const animation = useRef(null);
+  const animation = useRef(LottieView.prototype);
 
   useEffect(() => {
     AppState.addEventListener('change', _handleAppStateChange);
@@ -83,24 +82,19 @@ const App = () => {
     }
     appState.current = nextAppState;
     setAppStateVisible(appState.current);
-    animation.current.play();
   };
 
   // only one call when application startUp
   useEffect(() => {
-    // let didLoad = false;
     (async () => {
       if (startUp) {
-        // if (startUp && !didLoad) {
         await LocalAuthentication.authenticateAsync();
         setStartUp(false);
         const savedCards = await getAllSavedCards();
         setCard(savedCards);
       }
     })();
-    return () => {
-      // didLoad = true;
-    };
+    return () => {};
   }, [startUp]);
 
   const renderItem = ({ item }: { item: CardItem }) => (
@@ -128,122 +122,46 @@ const App = () => {
 
   return (
     <SafeAreaView style={styles.wrapper}>
-      <Modal animationType='slide' transparent={true} visible={modalVisible}>
-        <TouchableOpacity
-          style={styles.centeredView}
-          activeOpacity={1}
-          onPressOut={() => setModalVisible(false)}
-        >
-          <TouchableWithoutFeedback>
-            <View style={styles.modalView}>
-              <CreditCardInput
-                requiresName={true}
-                requiresCVC={true}
-                placeholders={{
-                  name: 'my card',
-                  number: '1234 5678 1234 5678',
-                  expiry: 'MM/YY',
-                  cvc: 'CVC',
-                }}
-                labels={{
-                  name: 'LABEL',
-                  number: 'CARD NUMBER',
-                  expiry: 'EXPIRY',
-                  cvc: 'CVC/CCV',
-                }}
-                onChange={(form: {
-                  valid: boolean;
-                  status: {
-                    name: string;
-                  };
-                  values: {
-                    expiry: string;
-                    name: string;
-                    number: string;
-                    cvc: string;
-                    type: string;
-                  };
-                }) => {
-                  if (form.valid && form.status.name === 'valid') {
-                    // Keyboard.dismiss();
-                    setCardInfoValid(true);
-                    const [MM, YY] = form.values.expiry.split('/');
-                    const { name, number, cvc, type } = form.values;
-                    const card: CardItem = {
-                      id: cards.length.toString(),
-                      name,
-                      number,
-                      MM,
-                      YY,
-                      cvc,
-                      type,
-                    };
-                    setInputCardInfo(card);
-                  }
-                }}
-              />
+      <Modal animationType='fade' transparent={true} visible={modalVisible}>
+        <BlurView intensity={100} style={[StyleSheet.absoluteFill]}>
+          <TouchableOpacity
+            style={styles.centeredView}
+            activeOpacity={1}
+            onPressOut={() => setModalVisible(false)}
+          >
+            <TouchableWithoutFeedback>
+              <View style={styles.modalView}>
+                <CardInput
+                  cards={cards}
+                  setCardInfoValid={setCardInfoValid}
+                  setInputCardInfo={setInputCardInfo}
+                ></CardInput>
 
-              <TouchableHighlight
-                style={{
-                  backgroundColor: cardInfoValid ? '#2196F3' : '#ff8888',
-                  marginTop: 10,
-                  padding: 10,
-                }}
-                disabled={!cardInfoValid}
-                onPress={async () => {
-                  setModalVisible(!modalVisible);
-
-                  await Promise.all([
-                    // update already cards info
-                    saveOne({
-                      key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
-                      val: {
-                        length: [...cards, inputCardInfo].length,
-                        keys: [...cards, inputCardInfo].map((card) => genStoreCardItemKey(card.id)),
-                      },
-                    }),
-                    // insert new card info
-                    saveOne({
-                      key: genStoreCardItemKey(inputCardInfo.id),
-                      val: inputCardInfo,
-                    }),
-                  ]);
-                  const allCardRes = await getOne<AllCardRes>({
-                    key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
-                  });
-                  if (allCardRes === null) {
-                    return;
-                  }
-                  const { keys: savedCardKeys } = allCardRes;
-                  const savedCards = await Promise.all(
-                    savedCardKeys.map((key) => {
-                      return getOne<CardItem>({ key });
-                    })
-                  );
-
-                  const filtered: CardItem[] = [];
-                  savedCards.forEach((e) => e !== null && filtered.push(e));
-                  setCard(filtered);
-                }}
-              >
-                <Text>a</Text>
-              </TouchableHighlight>
-            </View>
-          </TouchableWithoutFeedback>
-        </TouchableOpacity>
+                <CardRegisterButton
+                  cardInfoValid={cardInfoValid}
+                  modalVisible={modalVisible}
+                  inputCardInfo={inputCardInfo}
+                  cards={cards}
+                  animation={animation}
+                  setModalVisible={setModalVisible}
+                  setCard={setCard}
+                />
+              </View>
+            </TouchableWithoutFeedback>
+          </TouchableOpacity>
+        </BlurView>
       </Modal>
 
-      <FlatList
-        data={cards}
-        inverted={false}
-        renderItem={renderItem}
-        ListHeaderComponent={CardListHeaderComponent}
-        keyExtractor={(item) => {
-          return item.id.toString();
-        }}
-      ></FlatList>
+      <CardList
+        cards={cards}
+        setCardInfoValid={setCardInfoValid}
+        setModalVisible={setModalVisible}
+      />
 
-      <TouchableOpacity style={{ padding: 100 }} onPress={() => animation.current.reset()}>
+      <TouchableOpacity
+        style={{ padding: 100, backgroundColor: 'transparent' }}
+        onPress={() => animation.current.reset()}
+      >
         <LottieView
           source={require('./assets/animation/success.json')}
           autoPlay={false}
@@ -323,11 +241,9 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   modalView: {
-    margin: 20,
     width: 300,
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
     borderRadius: 20,
-    padding: 35,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

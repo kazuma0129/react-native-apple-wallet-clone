@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Text, StyleSheet, View, Image, TouchableOpacity, Pressable } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Clipboard from 'expo-clipboard';
+
+import { getOne } from '../drivers/secure_store';
+import { genStoreCardItemKey } from '../repositories/cards';
 
 const sleep = (second: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, second * 1000));

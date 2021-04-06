@@ -4,7 +4,7 @@ import {
   STORE_CREDIT_CARD_SAVED_LIST_KEY,
 } from '../constants/store';
 
-import { getOne, deleteOne, deleteMany } from '../drivers/secure_store';
+import { getOne, deleteOne } from '../drivers/secure_store';
 
 export type AllCardRes = {
   keys: string[];
