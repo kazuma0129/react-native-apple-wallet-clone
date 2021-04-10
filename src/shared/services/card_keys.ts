@@ -1,5 +1,5 @@
-import * as cardKeysRepository from '../repositories/card_keys';
 import * as cardsRepository from '../repositories/cards';
+import * as cardKeysRepository from '../repositories/card_keys';
 
 /**
  * 登録済みカードのキーリストに新規カードのキーを登録

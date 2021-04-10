@@ -1,26 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  AppState,
-  StyleSheet,
-  View,
-  SafeAreaView,
-  TouchableWithoutFeedback,
-  Modal,
-  TouchableOpacity,
-} from 'react-native';
-
-import { Snackbar, Icon } from 'react-native-magnus';
-import LottieView from 'lottie-react-native';
-
 import { registerRootComponent } from 'expo';
 import { BlurView } from 'expo-blur';
 import * as LocalAuthentication from 'expo-local-authentication';
-
+import LottieView from 'lottie-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  AppState,
+  Modal,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import { Icon, Snackbar } from 'react-native-magnus';
 import { snackbarRef } from './shared/components/card';
+import { CardInput } from './shared/components/card_input';
 import { CardList } from './shared/components/card_list';
 import { CardRegisterButton } from './shared/components/card_register_button';
-import { CardInput } from './shared/components/card_input';
-
 import * as cardsService from './shared/services/cards';
 
 const App = () => {

@@ -1,6 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Card } from '../components/card';
 
 export const CardList = ({

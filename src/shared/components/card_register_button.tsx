@@ -1,8 +1,6 @@
+import LottieView from 'lottie-react-native';
 import React from 'react';
 import { Text, TouchableHighlight } from 'react-native';
-
-import LottieView from 'lottie-react-native';
-
 import * as cardsRepository from '../repositories/cards';
 import * as cardsService from '../services/cards';
 import * as cardKeysService from '../services/card_keys';
