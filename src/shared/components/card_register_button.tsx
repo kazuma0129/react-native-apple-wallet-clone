@@ -3,9 +3,9 @@ import { Text, TouchableHighlight } from 'react-native';
 
 import LottieView from 'lottie-react-native';
 
-import { genStoreCardItemKey, AllCardRes } from '../repositories/cards';
-import { saveOne, getOne } from '../drivers/secure_store';
-import { STORE_CREDIT_CARD_SAVED_LIST_KEY } from '../constants/store';
+import * as cardsRepository from '../repositories/cards';
+import * as cardsService from '../services/cards';
+import * as cardKeysService from '../services/card_keys';
 
 export const CardRegisterButton = ({
   cardInfoValid,
@@ -35,35 +35,13 @@ export const CardRegisterButton = ({
 
         await Promise.all([
           // update already cards info
-          saveOne({
-            key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
-            val: {
-              length: [...cards, inputCardInfo].length,
-              keys: [...cards, inputCardInfo].map((card) => genStoreCardItemKey(card.id)),
-            },
-          }),
+          cardKeysService.updateCardKeys(inputCardInfo.id),
           // insert new card info
-          saveOne({
-            key: genStoreCardItemKey(inputCardInfo.id),
-            val: inputCardInfo,
-          }),
+          cardsRepository.createOne(inputCardInfo),
         ]);
-        const allCardRes = await getOne<AllCardRes>({
-          key: STORE_CREDIT_CARD_SAVED_LIST_KEY,
-        });
-        if (allCardRes === null) {
-          return;
-        }
-        const { keys: savedCardKeys } = allCardRes;
-        const savedCards = await Promise.all(
-          savedCardKeys.map((key) => {
-            return getOne<CardItem>({ key });
-          })
-        );
 
-        const filtered: CardItem[] = [];
-        savedCards.forEach((e) => e !== null && filtered.push(e));
-        setCard(filtered);
+        const cardList = await cardsService.getAllSavedCards();
+        setCard(cardList);
         animation?.current?.play();
       }}
     >

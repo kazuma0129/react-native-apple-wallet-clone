@@ -5,8 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Clipboard from 'expo-clipboard';
 
-import { getOne } from '../drivers/secure_store';
-import { genStoreCardItemKey } from '../repositories/cards';
+import * as cardsRepository from '../repositories/cards';
+import * as cardsService from '../services/cards';
 
 const sleep = (second: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, second * 1000));
@@ -116,10 +116,7 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
                 setCvc(invisibleCardData.cvc);
               } else {
                 // show secure values from SecureStore
-                const cardInfo = await getOne<CardItem>({ key: genStoreCardItemKey(id) });
-                if (cardInfo === null) {
-                  return;
-                }
+                const cardInfo = await cardsService.getOne(cardsRepository.genStoreCardItemKey(id));
                 setNumber(cardInfo.number);
                 setMM(cardInfo.MM);
                 setYY(cardInfo.YY);

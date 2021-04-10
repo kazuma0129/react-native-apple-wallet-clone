@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   AppState,
   StyleSheet,
-  Text,
   View,
   SafeAreaView,
   TouchableWithoutFeedback,
@@ -21,7 +20,8 @@ import { snackbarRef } from './shared/components/card';
 import { CardList } from './shared/components/card_list';
 import { CardRegisterButton } from './shared/components/card_register_button';
 import { CardInput } from './shared/components/card_input';
-import { getAllSavedCards } from './shared/repositories/cards';
+
+import * as cardsService from './shared/services/cards';
 
 const App = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -90,35 +90,12 @@ const App = () => {
       if (startUp) {
         await LocalAuthentication.authenticateAsync();
         setStartUp(false);
-        const savedCards = await getAllSavedCards();
+        const savedCards = await cardsService.getAllSavedCards();
         setCard(savedCards);
       }
     })();
     return () => {};
   }, [startUp]);
-
-  const renderItem = ({ item }: { item: CardItem }) => (
-    <Card id={item.id} name={item.name} type={item.type} />
-  );
-
-  const CardListHeaderComponent = () => {
-    return (
-      <View style={styles.viewWrapper}>
-        <Text style={styles.titleText}>💳</Text>
-        <TouchableOpacity>
-          <Text
-            style={{ ...styles.titleText }}
-            onPress={() => {
-              setCardInfoValid(false);
-              setModalVisible(true);
-            }}
-          >
-            +
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
 
   return (
     <SafeAreaView style={styles.wrapper}>
@@ -192,47 +169,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     padding: 20,
     height: '100%',
-  },
-  viewWrapper: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    margin: 20,
-  },
-  cardInfoTextMargin: {
-    marginBottom: 10,
-  },
-  container: {
-    flexDirection: 'column',
-    flex: 1,
-    justifyContent: 'space-between',
-    height: 230,
-    borderRadius: 20,
-    padding: 10,
-    margin: 10,
-    paddingTop: 15,
-    marginHorizontal: 20,
-  },
-  cardTextColorLight: {
-    color: '#fff',
-  },
-  containerPressed: {
-    flex: 1,
-    backgroundColor: '#666',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 220,
-    borderColor: '#fff',
-    borderWidth: 1,
-    borderRadius: 13,
-    padding: 10,
-    margin: 10,
-  },
-  titleText: {
-    marginTop: 20,
-    fontSize: 50,
-    fontWeight: 'bold',
-    color: '#fff',
   },
   centeredView: {
     flex: 1,
