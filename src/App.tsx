@@ -5,6 +5,7 @@ import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   AppState,
+  AppStateStatus,
   Modal,
   SafeAreaView,
   StyleSheet,
@@ -39,6 +40,7 @@ const App = () => {
   const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
   const animation = useRef(LottieView.prototype);
+  const [animationState, setAnimationState] = useState(false);
 
   useEffect(() => {
     AppState.addEventListener('change', _handleAppStateChange);
@@ -63,7 +65,7 @@ const App = () => {
     };
   }, [shouldReAuth]);
 
-  const _handleAppStateChange = (nextAppState: any) => {
+  const _handleAppStateChange = (nextAppState: AppStateStatus) => {
     if (appState.current.match(/inactive|background/)) {
     }
     if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
@@ -116,6 +118,7 @@ const App = () => {
                   inputCardInfo={inputCardInfo}
                   cards={cards}
                   animation={animation}
+                  setAnimationState={setAnimationState}
                   setModalVisible={setModalVisible}
                   setCard={setCard}
                 />
@@ -131,31 +134,39 @@ const App = () => {
         setModalVisible={setModalVisible}
       />
 
-      <TouchableOpacity
-        style={{ padding: 100, backgroundColor: 'transparent' }}
-        onPress={() => animation.current.reset()}
-      >
-        <LottieView
-          source={require('./assets/animation/success.json')}
-          autoPlay={false}
-          loop={false}
-          ref={animation}
-        />
-      </TouchableOpacity>
+      <Modal transparent={true} visible={animationState}>
+        <BlurView intensity={100} style={[StyleSheet.absoluteFill]}>
+          <TouchableOpacity
+            style={{ ...styles.centeredView, padding: 100, backgroundColor: 'transparent' }}
+            onPress={() => {
+              animation.current.reset();
+              setAnimationState(false);
+            }}
+          >
+            <LottieView
+              source={require('./assets/animation/success.json')}
+              autoPlay={false}
+              loop={false}
+              ref={animation}
+            />
+          </TouchableOpacity>
+        </BlurView>
+      </Modal>
 
       <Snackbar
         suffix={<Icon name='checkcircle' color='white' fontSize='md' fontFamily='AntDesign' />}
-        m={40}
-        mb={60}
-        p={25}
-        onDismiss={() => {}}
+        m={0}
+        mx={40}
+        mb={15}
+        p={20}
         ref={snackbarRef}
-        bg='gray400'
-        color='black'
+        bg='#999'
+        color='white'
         duration={2000}
-      >
-        Copied to your Clipboard!
-      </Snackbar>
+        // borderColor='white'
+        // borderWidth={0.5}
+        rounded={10}
+      />
     </SafeAreaView>
   );
 };

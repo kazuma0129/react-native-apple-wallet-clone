@@ -3,12 +3,13 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SnackbarRef } from 'react-native-magnus';
 import * as cardsRepository from '../repositories/cards';
 import * as cardsService from '../services/cards';
 
 const sleep = (second: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, second * 1000));
-export const snackbarRef = React.createRef();
+export const snackbarRef = React.createRef<SnackbarRef>();
 
 type CardProp = {
   id: string;
@@ -70,7 +71,8 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
       onPressOut={async () => {}}
     >
       <LinearGradient
-        colors={['#44A5FF', '#393FFF']}
+        colors={['#111', '#111', '#111']}
+        // colors={['#44A5FF', '#393FFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
@@ -142,7 +144,7 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
             await sleep(0.2);
             await Haptics.impactAsync();
             if (snackbarRef.current) {
-              snackbarRef.current.show();
+              snackbarRef.current.show('Copied to your Clipboard!');
             }
           }}
         >
@@ -224,6 +226,8 @@ const styles = StyleSheet.create({
     margin: 10,
     paddingTop: 15,
     marginHorizontal: 20,
+    borderColor: '#333',
+    borderWidth: 1,
   },
   cardTextColorLight: {
     color: '#fff',

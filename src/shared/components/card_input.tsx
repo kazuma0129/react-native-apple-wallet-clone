@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleProp, View, StyleSheet, Text, TextInput } from 'react-native';
 import { CreditCardInput } from 'react-native-credit-card-input';
 
 export const CardInput = ({
@@ -26,6 +27,13 @@ export const CardInput = ({
         expiry: 'EXPIRY',
         cvc: 'CVC/CCV',
       }}
+      cardImageFront={100}
+      cardImageBack={100}
+      invalidColor='#d74545'
+      validColor='#2196F3'
+      placeholderColor='#aaa'
+      inputStyle={(styles.inputStyle as unknown) as StyleProp<TextInput>}
+      inputContainerStyle={(styles.inputContainerStyle as unknown) as StyleProp<View>}
       onChange={(form: {
         valid: boolean;
         status: {
@@ -59,3 +67,13 @@ export const CardInput = ({
     />
   );
 };
+
+const styles = StyleSheet.create({
+  inputStyle: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  inputContainerStyle: {
+    // backgroundColor: '#fff',
+  },
+});

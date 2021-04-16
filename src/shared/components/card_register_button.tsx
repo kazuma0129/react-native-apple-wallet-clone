@@ -11,6 +11,7 @@ export const CardRegisterButton = ({
   inputCardInfo,
   cards,
   animation,
+  setAnimationState,
   setModalVisible,
   setCard,
 }: {
@@ -19,6 +20,7 @@ export const CardRegisterButton = ({
   inputCardInfo: CardItem;
   cards: CardItem[];
   animation: React.MutableRefObject<LottieView>;
+  setAnimationState: React.Dispatch<React.SetStateAction<boolean>>;
   setModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
   setCard: React.Dispatch<React.SetStateAction<CardItem[]>>;
 }) => {
@@ -26,6 +28,7 @@ export const CardRegisterButton = ({
     <TouchableHighlight
       style={{
         alignItems: 'center',
+        backgroundColor: 'transparent',
       }}
       disabled={!cardInfoValid}
       onPress={async () => {
@@ -40,12 +43,13 @@ export const CardRegisterButton = ({
 
         const cardList = await cardsService.getAllSavedCards();
         setCard(cardList);
+        setAnimationState(true);
         animation?.current?.play();
       }}
     >
       <Text
         style={{
-          backgroundColor: cardInfoValid ? '#2196F3' : '#ff8888',
+          backgroundColor: cardInfoValid ? '#2196F3' : '#aaa',
           padding: 10,
           margin: 10,
         }}
