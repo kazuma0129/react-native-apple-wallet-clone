@@ -1,3 +1,4 @@
+import { cardNotFound } from '../errors';
 import * as cardsRepository from '../repositories/cards';
 import * as cardKeysRepository from '../repositories/card_keys';
 
@@ -8,7 +9,7 @@ import * as cardKeysRepository from '../repositories/card_keys';
 export const getOne = async (key: string): Promise<CardItem> => {
   const card = await cardsRepository.getOne(key);
   if (card === null) {
-    throw Error;
+    throw cardNotFound();
   }
   return card;
 };
@@ -19,7 +20,7 @@ export const getOne = async (key: string): Promise<CardItem> => {
 export const getAllSavedCards = async (): Promise<CardItem[]> => {
   const cardKey = await cardKeysRepository.getOne();
   if (cardKey === null) {
-    throw Error();
+    return [];
   }
   const allSavedCards = await Promise.all(cardKey.keys.map(cardsRepository.getOne));
   // TypeScriptでfilterを推論できないのでforEachで擬似的にフィルタリング
