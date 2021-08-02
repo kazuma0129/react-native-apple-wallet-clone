@@ -6,6 +6,7 @@ import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View, Alert } fro
 import { SnackbarRef } from 'react-native-magnus';
 import * as cardsRepository from '../repositories/cards';
 import * as cardsService from '../services/cards';
+import * as cardKeysService from '../services/card_keys';
 import * as COLOR from '../constants/color';
 
 const sleep = (second: number): Promise<void> =>
@@ -70,8 +71,8 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
             {
               text: 'OK',
               onPress: async () => {
-                const key = cardsRepository.genStoreCardItemKey(id);
-                await cardsRepository.removeOne(key);
+                await cardsService.removeOneByCardId(id);
+                await cardKeysService.removeOne(id);
               },
             },
           ],
@@ -98,14 +99,8 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text
-            style={{
-              color: COLOR.white,
-              paddingHorizontal: 15,
-            }}
-          >
-            {name}
-          </Text>
+          <Text style={{ color: COLOR.white, paddingHorizontal: 15 }}>{name}</Text>
+
           <View
             style={{
               height: 40,
@@ -166,12 +161,7 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
             }}
           >
             <Text
-              style={{
-                color: COLOR.white,
-                fontSize: 24,
-                fontWeight: '300',
-                letterSpacing: 1.5,
-              }}
+              style={{ color: COLOR.white, fontSize: 24, fontWeight: '300', letterSpacing: 1.5 }}
             >
               {number}
             </Text>

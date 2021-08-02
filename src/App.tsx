@@ -14,10 +14,10 @@ import {
   View,
 } from 'react-native';
 import { Icon, Snackbar } from 'react-native-magnus';
-import { snackbarRef } from './shared/components/card';
-import { CardInput } from './shared/components/card_input';
-import { CardList } from './shared/components/card_list';
-import { CardRegisterButton } from './shared/components/card_register_button';
+import { snackbarRef } from './shared/components/Card';
+import { CardInput } from './shared/components/CardInput';
+import { CardList } from './shared/components/CardList';
+import { CardRegisterButton } from './shared/components/CardRegisterButton';
 import * as cardsService from './shared/services/cards';
 
 const App = () => {

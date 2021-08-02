@@ -44,3 +44,12 @@ export const removeAllSavedCards = async (): Promise<void> => {
   await cardsRepository.removeMany(cardKey.keys);
   await cardKeysRepository.removeOne();
 };
+
+/**
+ * cardIdで1件削除
+ * @param cardId
+ */
+export const removeOneByCardId = async (cardId: string): Promise<void> => {
+  const key = cardsRepository.genStoreCardItemKey(cardId);
+  return await cardsRepository.removeOne(key);
+};
