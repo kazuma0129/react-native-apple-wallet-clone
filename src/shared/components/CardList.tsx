@@ -4,11 +4,9 @@ import { Card } from './Card';
 
 export const CardList = ({
   cards,
-  setCardInfoValid,
   setModalVisible,
 }: {
   cards: CardItem[];
-  setCardInfoValid: React.Dispatch<React.SetStateAction<boolean>>;
   setModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const renderItem = ({ item }: { item: CardItem }) => (
@@ -23,7 +21,6 @@ export const CardList = ({
           <Text
             style={{ ...styles.titleText }}
             onPress={() => {
-              setCardInfoValid(false);
               setModalVisible(true);
             }}
           >

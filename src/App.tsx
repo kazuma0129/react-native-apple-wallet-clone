@@ -1,11 +1,8 @@
 import { registerRootComponent } from 'expo';
 import { BlurView } from 'expo-blur';
-import * as LocalAuthentication from 'expo-local-authentication';
 import LottieView from 'lottie-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  AppState,
-  AppStateStatus,
   Modal,
   SafeAreaView,
   StyleSheet,
@@ -20,6 +17,11 @@ import { CardList } from './shared/components/CardList';
 import { CardRegisterButton } from './shared/components/CardRegisterButton';
 import * as cardsService from './shared/services/cards';
 
+import * as cardKeysService from './shared/services/card_keys';
+import * as cardsRepository from './shared/repositories/cards';
+
+import useAuthentication from './shared/hooks/useAuthentication';
+
 const App = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [cardInfoValid, setCardInfoValid] = useState(false);
@@ -33,67 +35,33 @@ const App = () => {
     cvc: '',
     type: '',
   });
-  const [shouldReAuth, setShouldReAuth] = useState(false);
-  const [startUp, setStartUp] = useState(true);
 
-  const appState = useRef(AppState.currentState);
-  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+  useAuthentication({
+    mode: 'onInactive',
+    onStartup: async () => {
+      const savedCards = await cardsService.getAllSavedCards();
+      setCard(savedCards);
+    },
+  });
 
   const animation = useRef(LottieView.prototype);
   const [animationState, setAnimationState] = useState(false);
 
-  useEffect(() => {
-    AppState.addEventListener('change', _handleAppStateChange);
-    return () => {
-      AppState.removeEventListener('change', _handleAppStateChange);
-    };
-  }, [appStateVisible]);
+  const onRegister = async () => {
+    setModalVisible(!modalVisible);
 
-  // reAuth when back to foreground from background
-  useEffect(() => {
-    let didAuth = false;
-    (async () => {
-      if (shouldReAuth) {
-        if (!didAuth) {
-          await LocalAuthentication.authenticateAsync();
-          setShouldReAuth(false);
-        }
-      }
-    })();
-    return () => {
-      didAuth = true;
-    };
-  }, [shouldReAuth]);
+    await Promise.all([
+      // update already cards info
+      cardKeysService.updateCardKeys(inputCardInfo.id),
+      // insert new card info
+      cardsRepository.createOne(inputCardInfo),
+    ]);
 
-  const _handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (appState.current.match(/inactive|background/)) {
-    }
-    if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-      // console.log('App has come to the foreground!');
-    }
-    if (appState.current === 'background' && nextAppState === 'active') {
-      // console.log('App has come to the foreground from background!');
-      setShouldReAuth(true);
-    }
-    if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-      // console.log('App goto background!');
-    }
-    appState.current = nextAppState;
-    setAppStateVisible(appState.current);
+    const cardList = await cardsService.getAllSavedCards();
+    setCard(cardList);
+    setAnimationState(true);
+    animation?.current?.play();
   };
-
-  // only one call when application startUp
-  useEffect(() => {
-    (async () => {
-      if (startUp) {
-        await LocalAuthentication.authenticateAsync();
-        setStartUp(false);
-        const savedCards = await cardsService.getAllSavedCards();
-        setCard(savedCards);
-      }
-    })();
-    return () => {};
-  }, [startUp]);
 
   return (
     <SafeAreaView style={styles.wrapper}>
@@ -112,27 +80,14 @@ const App = () => {
                   setInputCardInfo={setInputCardInfo}
                 ></CardInput>
 
-                <CardRegisterButton
-                  cardInfoValid={cardInfoValid}
-                  modalVisible={modalVisible}
-                  inputCardInfo={inputCardInfo}
-                  cards={cards}
-                  animation={animation}
-                  setAnimationState={setAnimationState}
-                  setModalVisible={setModalVisible}
-                  setCard={setCard}
-                />
+                <CardRegisterButton disabled={!cardInfoValid} onRegister={onRegister} />
               </View>
             </TouchableWithoutFeedback>
           </TouchableOpacity>
         </BlurView>
       </Modal>
 
-      <CardList
-        cards={cards}
-        setCardInfoValid={setCardInfoValid}
-        setModalVisible={setModalVisible}
-      />
+      <CardList cards={cards} setModalVisible={setModalVisible} />
 
       <Modal transparent={true} visible={animationState}>
         <BlurView intensity={100} style={[StyleSheet.absoluteFill]}>

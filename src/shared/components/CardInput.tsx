@@ -1,6 +1,20 @@
-import React from 'react';
-import { StyleProp, View, StyleSheet, Text, TextInput } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleProp, View, StyleSheet, TextInput } from 'react-native';
 import { CreditCardInput } from 'react-native-credit-card-input';
+
+type CreditCardFormType = {
+  valid: boolean;
+  status: {
+    name: string;
+  };
+  values: {
+    expiry: string;
+    name: string;
+    number: string;
+    cvc: string;
+    type: string;
+  };
+};
 
 export const CardInput = ({
   cards,
@@ -11,6 +25,32 @@ export const CardInput = ({
   setCardInfoValid: React.Dispatch<React.SetStateAction<boolean>>;
   setInputCardInfo: React.Dispatch<React.SetStateAction<CardItem>>;
 }) => {
+  const onChange = (form: CreditCardFormType) => {
+    if (!form.valid || form.status.name !== 'valid') {
+      return;
+    }
+    // Keyboard.dismiss();
+    setCardInfoValid(true);
+    const [MM, YY] = form.values.expiry.split('/');
+    const { name, number, cvc, type } = form.values;
+    const card: CardItem = {
+      id: cards.length.toString(),
+      name,
+      number,
+      MM,
+      YY,
+      cvc,
+      type,
+    };
+    setInputCardInfo(card);
+  };
+
+  useEffect(() => {
+    return () => {
+      setCardInfoValid(false);
+    };
+  }, []);
+
   return (
     <CreditCardInput
       requiresName={true}
@@ -32,38 +72,9 @@ export const CardInput = ({
       invalidColor='#d74545'
       validColor='#2196F3'
       placeholderColor='#aaa'
-      inputStyle={(styles.inputStyle as unknown) as StyleProp<TextInput>}
-      inputContainerStyle={(styles.inputContainerStyle as unknown) as StyleProp<View>}
-      onChange={(form: {
-        valid: boolean;
-        status: {
-          name: string;
-        };
-        values: {
-          expiry: string;
-          name: string;
-          number: string;
-          cvc: string;
-          type: string;
-        };
-      }) => {
-        if (form.valid && form.status.name === 'valid') {
-          // Keyboard.dismiss();
-          setCardInfoValid(true);
-          const [MM, YY] = form.values.expiry.split('/');
-          const { name, number, cvc, type } = form.values;
-          const card: CardItem = {
-            id: cards.length.toString(),
-            name,
-            number,
-            MM,
-            YY,
-            cvc,
-            type,
-          };
-          setInputCardInfo(card);
-        }
-      }}
+      inputStyle={styles.inputStyle as unknown as StyleProp<TextInput>}
+      inputContainerStyle={styles.inputContainerStyle as unknown as StyleProp<View>}
+      onChange={onChange}
     />
   );
 };
