@@ -62,7 +62,6 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
         Alert.alert(
           'delete this?',
           `id:${id}`,
-
           [
             {
               text: 'Cancel',
