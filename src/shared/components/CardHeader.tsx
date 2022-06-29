@@ -4,7 +4,7 @@ import { baseColors } from '../constants/color';
 
 export interface CardHeaderProps {
   name: string;
-  cardImage: any;
+  cardImage?: any;
 }
 
 export const CardHeader = ({ name, cardImage }: CardHeaderProps) => {
@@ -20,14 +20,16 @@ export const CardHeader = ({ name, cardImage }: CardHeaderProps) => {
           paddingRight: 10,
         }}
       >
-        <Image
-          source={cardImage}
-          resizeMode='contain'
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-        />
+        {cardImage ? (
+          <Image
+            source={cardImage}
+            resizeMode='contain'
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        ) : null}
       </View>
     </View>
   );

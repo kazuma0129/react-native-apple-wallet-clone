@@ -1,9 +1,9 @@
 export const invisibleCardData: CardItem = {
   id: '0',
-  name: 'test',
+  name: 'name',
   number: '**** **** **** ****',
   MM: 'MM',
   YY: 'YY',
   cvc: '***',
-  type: 'visa',
+  type: '',
 } as const;

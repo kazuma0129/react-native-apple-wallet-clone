@@ -18,7 +18,7 @@ export const CardBody = ({
     <View style={{ paddingLeft: 15, flexDirection: 'column' }}>
       <TouchableOpacity onPressOut={onPressOutVisibleButton}>
         <Text style={{ color: baseColors.grayLight, fontSize: 10, paddingBottom: 10 }}>
-          {`Card Number ${isVisible ? '🙈' : '🙉'}`}
+          {`Card Number ${isVisible ? '🙉' : '🙈'}`}
         </Text>
       </TouchableOpacity>
 

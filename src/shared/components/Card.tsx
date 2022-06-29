@@ -1,7 +1,7 @@
 import Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet } from 'react-native';
 import { SnackbarRef } from 'react-native-magnus';
 
@@ -22,13 +22,13 @@ type CardProp = {
   type: string;
 };
 
-export const Card = ({ id }: CardProp) => {
+export const Card = ({ id, name }: CardProp) => {
   const [visibleCardInfo, setVisibleCardInfo] = useState(false);
 
   const [cardInfo, setCardInfo] = useState<CardItem>(invisibleCardData);
 
-  const cardImage = ((type) => {
-    switch (type) {
+  const cardImage = useMemo(() => {
+    switch (cardInfo.type) {
       case 'visa':
         return require('../../assets/cards/visa_PNG30.png');
       case 'master-card':
@@ -36,11 +36,11 @@ export const Card = ({ id }: CardProp) => {
       case 'jcb':
         return require('../../assets/cards/JCB_logo_logotype_emblem_Japan_Credit_Bureau.png');
       case 'american-express':
-        return require('../../assets/cards/Amex_logo_baseColors.png');
+        return require('../../assets/cards/Amex_logo_color.png');
       default:
-        return require('../../assets/cards/Amex_logo_baseColors.png');
+        return undefined;
     }
-  })(cardInfo.type);
+  }, [cardInfo.type]);
 
   const onCardLongPress = async () => {
     await Haptics.impactAsync();
@@ -68,7 +68,7 @@ export const Card = ({ id }: CardProp) => {
     setVisibleCardInfo(!visibleCardInfo);
     if (visibleCardInfo) {
       // hide secure values
-      setCardInfo(invisibleCardData);
+      setCardInfo({ ...invisibleCardData, id, name });
     } else {
       // show secure values from SecureStore
       const cardInfo = await cardsService.getOne(cardsRepository.genStoreCardItemKey(id));
