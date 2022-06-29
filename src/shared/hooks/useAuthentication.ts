@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { authenticateAsync } from 'expo-local-authentication';
 
 const useAuthentication = ({
   mode = 'onInactive',
@@ -27,7 +27,7 @@ const useAuthentication = ({
     (async () => {
       if (shouldReAuth) {
         if (!didAuth) {
-          await LocalAuthentication.authenticateAsync();
+          await authenticateAsync();
           setShouldReAuth(false);
         }
       }
@@ -58,7 +58,7 @@ const useAuthentication = ({
   useEffect(() => {
     (async () => {
       if (startUp) {
-        await LocalAuthentication.authenticateAsync();
+        await authenticateAsync();
         setStartUp(false);
         onStartup && onStartup();
       }

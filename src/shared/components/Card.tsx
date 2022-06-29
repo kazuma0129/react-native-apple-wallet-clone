@@ -150,7 +150,7 @@ export const Card = ({ id, name: propName, type: propType }: CardProp) => {
                 return;
               }
               const removedWhiteSpaceNumber = number.split(' ').join('');
-              Clipboard.setString(removedWhiteSpaceNumber);
+              await Clipboard.setStringAsync(removedWhiteSpaceNumber);
               await Haptics.impactAsync();
               await sleep(0.2);
               await Haptics.impactAsync();
